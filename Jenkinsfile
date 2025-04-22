@@ -60,13 +60,14 @@ pipeline {
 	stage("Build & Push Docker Image") {
 	    steps {
 	        script {
-	               docker.withRegistry('https://index.docker.io/v1/', DOCKER_PASS) {
-			def dockerImage = docker.build("${IMAGE_NAME}")
-    			dockerImage.push("${IMAGE_TAG}")
+	            withCredentials([string(credentialsId: DOCKER_PASS, variable: 'DOCKER_PASSWORD')]) {
+	                sh "docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}"
+	                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+	                sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+	                sh "docker logout"
+	            }
 	        }
 	    }
-	}
-	 
 	}
 
 	    
