@@ -60,8 +60,8 @@ pipeline {
 	stage("Build & Push Docker Image") {
 	    steps {
 	        script {
-	            withCredentials([string(credentialsId: DOCKER_PASS, variable: 'DOCKER_PASSWORD')]) {
-	                sh "docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}"
+	            withCredentials([usernamePassword(credentialsId: DOCKER_PASS, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+	                sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
 	                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
 	                sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
 	                sh "docker logout"
