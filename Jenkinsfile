@@ -1,4 +1,3 @@
-
 pipeline {
     agent { label 'Jenkins-Agent' }
     tools { 
@@ -6,71 +5,74 @@ pipeline {
         maven 'Maven3'
     }
     environment {
-	    APP_NAME = "register-app-eks"
-            RELEASE = "1.0.0"
-            DOCKER_USER = "hamdihamza"
-            DOCKER_PASS = 'docker-hub'
-            IMAGE_NAME = "${DOCKER_USER}" + "/" + "${APP_NAME}"
-            IMAGE_TAG = "${RELEASE}-${BUILD_NUMBER}"
+        APP_NAME = "register-app-eks"
+        RELEASE = "1.0.0"
+        AWS_ACCOUNT_ID = "694580352301" // From your screenshot
+        AWS_REGION = "eu-north-1" // From your screenshot
+        ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        IMAGE_NAME = "${ECR_REPO}/${APP_NAME}"
+        IMAGE_TAG = "${RELEASE}-${BUILD_NUMBER}"
+        AWS_CRED = 'aws-ecr' // Your credentials ID in Jenkins
     }
+    
     stages{
         stage("Cleanup Workspace"){
                 steps {
                 cleanWs()
                 }
         }
-
         stage("Checkout from SCM"){
                 steps {
                     git branch: 'main', credentialsId: 'github', url: 'https://github.com/Hamhamdi/register-app-eks'
                 }
         }
-
         stage("Build Application"){
             steps {
                 sh "mvn clean package"
             }
         }
-
         stage("Test Application"){
             steps {
                 sh "mvn test"
             }
         }
-
         stage("SonarQube Analysis"){
              steps {
-	        script {
-		        withSonarQubeEnv(credentialsId: 'jenkins-sonarqube-token') { 
+                script {
+                    withSonarQubeEnv(credentialsId: 'jenkins-sonarqube-token') { 
                         sh "mvn sonar:sonar"
-		        }
-	           }	
+                    }
+                }    
            }
        }
-	//stop quality gate for later
-	/* stage("Quality Gate"){
-           steps {
-               script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'jenkins-sonarqube-token'
-                }	
+        
+        stage("Build & Push Docker Image") {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: AWS_CRED, usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                        // Configure AWS CLI with credentials
+                        sh """
+                        export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+                        export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+                        export AWS_REGION=${AWS_REGION}
+                        
+                        # Get ECR login token and login to Docker
+                        aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPO}
+                        
+                        # Build and push Docker image
+                        docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                        
+                        # Tag and push as latest as well
+                        docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
+                        docker push ${IMAGE_NAME}:latest
+                        
+                        # Logout
+                        docker logout ${ECR_REPO}
+                        """
+                    }
+                }
             }
-
-        } */
-
-	stage("Build & Push Docker Image") {
-	    steps {
-	        script {
-	            withCredentials([usernamePassword(credentialsId: DOCKER_PASS, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-	                sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
-	                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
-	                sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
-	                sh "docker logout"
-	            }
-	        }
-	    }
-	}
-
-	    
-
+        }
     }
 }
