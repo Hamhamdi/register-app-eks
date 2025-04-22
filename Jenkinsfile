@@ -8,7 +8,7 @@ pipeline {
     environment {
 	    APP_NAME = "register-app-eks"
             RELEASE = "1.0.0"
-            DOCKER_USER = "hamhamdi"
+            DOCKER_USER = "hamdihamza"
             DOCKER_PASS = 'docker-hub'
             IMAGE_NAME = "${DOCKER_USER}" + "/" + "${APP_NAME}"
             IMAGE_TAG = "${RELEASE}-${BUILD_NUMBER}"
