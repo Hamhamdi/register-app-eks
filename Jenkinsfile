@@ -46,35 +46,6 @@ pipeline {
            }
        }
         
-      /*  stage("Build & Push Docker Image") {
-            steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: AWS_CRED, usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                        
-                        sh """
-                        export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-                        export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-                        export AWS_REGION=${AWS_REGION}
-                        
-                        # Get ECR login token and login to Docker
-                        aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPO}
-                        
-                        # Build and push Docker image
-                        docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                        
-                        # Tag and push as latest as well
-                        docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
-                        docker push ${IMAGE_NAME}:latest
-                        
-                        # Logout
-                        docker logout ${ECR_REPO}
-                        """
-                    }
-                }
-            }
-        }
-        */
 
         stage("Build & Tag Docker Image") {
             steps {
